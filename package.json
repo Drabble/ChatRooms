@@ -1,0 +1,14 @@
+{
+  "name": "music-chat",
+  "version": "0.0.1",
+  "description": "Music Chat",
+  "dependencies": {
+    "chance": "^1.0.18",
+    "express": "^4.15.2",
+    "socket.io": "2.2.0",
+    "uuid": "^3.3.2"
+  },
+  "scripts": {
+    "start": "node index.js"
+  }
+}

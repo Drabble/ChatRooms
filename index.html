@@ -1,0 +1,57 @@
+<!doctype html>
+<html>
+	<head>
+		<title>Socket.IO chat</title>
+		<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.2/css/all.css" integrity="sha384-oS3vJWv+0UjzBfQzYUhtDYW+Pj2yciDJxpsK1OYPAYjqT085Qq/1cq5FLXAZQ7Ay" crossorigin="anonymous">
+		<link rel="stylesheet" href="css/style.css">
+	</head>
+	<body>
+		<div id="loader-container">
+			<div id="loader">
+				<ul>
+					<li></li>
+					<li></li>
+					<li></li>
+					<li></li>
+					<li></li>
+					<li></li>
+				</ul>
+			</div>
+		</div>
+		<div id="sidenav" class="scrollbar">
+			<p id="user"><span id="username"></span> <i id="status-icon" class="fas fa-circle" style="color: red;"></i></p>
+
+			<form id="form-search">
+				<input type="text" name="focus" required class="search-box" placeholder="Filter rooms" />
+				<button class="close-icon" type="reset"></button>
+			</form>
+
+			<div id="rooms" class="scrollbar">
+				<p style="text-align: center;">List of rooms</p>
+				<table>
+				</table>
+			</div>
+
+			<form class="create" id="new_room">
+					<input type="create" id="room-name" class="create-box" required class="search-box" placeholder="Create a new room" />
+					<button class="create-button"></button>
+			  </form>
+
+			<div id="users" class="scrollbar">
+					<p style="text-align: center;">Users in the room</p>
+					<table>
+						<tr><td colspan="2"><i>Not in room yet...</i></td></tr>
+					</table>
+			</div>
+		</div>
+
+		<ul id="messages"></ul>
+		<form id="send" action="">
+			<input id="m" autocomplete="off" /><button>Send</button>
+		</form>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
+		<script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+		<script src="https://unpkg.com/peerjs@1.0.0/dist/peerjs.min.js"></script>
+		<script src="js/script.js"></script>
+	</body>
+</html>
