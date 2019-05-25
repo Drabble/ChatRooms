@@ -21,7 +21,7 @@ io.on('connection', function (socket) {
 	socket.join("afk");
 
 	// Set random username
-	socket.username = chance.prefix() + " " + chance.profession() + " " + chance.animal();
+	socket.username = chance.prefix() + " " + chance.animal();
 	socket.emit('username', socket.username);
 
 	// Send list of rooms

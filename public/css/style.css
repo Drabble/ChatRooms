@@ -139,6 +139,10 @@ body {
     font-style: italic;
     color: #444444;
 }
+.message-username{
+    font-style: italic;
+    color: #444444;
+}
 
 /********************* Side Nav *********************/
 #sidenav {

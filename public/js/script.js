@@ -35,7 +35,8 @@ $(function () {
             }
         }
         window.scrollTo(0, document.body.scrollHeight);
-        $('#messages').append($('<li>').text($('#m').val()));
+        
+        $('#messages').append(`<li><span class="message-username" style="color: red">${username} : </span>${$('#m').val()}</li>`);
         $('#m').val('');
         return false;
     });
@@ -114,15 +115,9 @@ $(function () {
                 break;
             }
         }
-        console.log(i);
-        console.log(clients.length);
         clients.splice(i,1);
-        console.log(clients.length);
-        console.log("SPLICED CLIENS");
         var child = $("#users table").children().first().children().eq(i);
-        console.log(child);
         if(child != null){
-            console.log("remove");
             child.remove();
         }
     });
@@ -144,11 +139,17 @@ $(function () {
         // Handle incoming p2p conns
         peer = new Peer(socket.id);
         peer.on('connection', function (conn) {
-            //conns.push(conn);
+            for(var i in clients){
+                if(clients[i].id == conn.peer){
+                    clients[i].conn = conn;
+                    $("#users table").children().first().children().eq(i).find("i").css("color", "green");
+                    break;
+                }
+            }
 
             conn.on('data', function (data) {
                 console.log(data);
-                $('#messages').append($('<li>').text(data));
+                $('#messages').append(`<li><span class="message-username">${clients[i].username} : </span>${data}</li>`);
                 window.scrollTo(0, document.body.scrollHeight);
             });
 
@@ -163,11 +164,12 @@ $(function () {
             info("Joined the room");
             for (var i in msg.clients) {
                 if (msg.clients[i].id !== socket.id) {
-                    var conn = peer.connect(msg.clients[i].id);
+                    clients[i].conn = peer.connect(msg.clients[i].id);
 
                     (function (i) {
                         // on open will be launch when you successfully connect to PeerServer
-                        conn.on('open', function () {
+                        clients[i].conn.on('open', function () { 
+                            $("#users table").children().first().children().eq(i).find("i").css("color", "green");
                             info("Connected to " + msg.clients[i].username);
 
                             var call = peer.call(msg.clients[i].id, myStream);
@@ -175,10 +177,9 @@ $(function () {
                                 //info("Sending stream to " + msg.clients[i].username);
                                 playStream(remoteStream);
                             });
-                            conn.on('data', function (data) {
+                            clients[i].conn.on('data', function (data) {
                                 console.log(data);
-
-                                $('#messages').append($('<li>').text(data));
+                                $('#messages').append(`<li><span class="message-username">${clients[i].username} : </span>${data}</li>`);
                                 window.scrollTo(0, document.body.scrollHeight);
                             });
                         });
@@ -195,7 +196,7 @@ $(function () {
         }
         for (var i in msg.clients) {
             if(msg.clients[i].username === username){
-                $("#users table").append(`<tr><td><p class="active-room">${msg.clients[i].username}</p></td><td style="text-align: right;"><i id="status-icon" class="fas fa-circle" style="color: red;"></tr>`);
+                $("#users table").append(`<tr><td><p class="active-room">${msg.clients[i].username}</p></td><td style="text-align: right;"><i id="status-icon" class="fas fa-circle" style="color: green;"></tr>`);
             } else{
                 $("#users table").append(`<tr><td><p>${msg.clients[i].username}</p></td><td style="text-align: right;"><i id="status-icon" class="fas fa-circle" style="color: red;"></tr>`);
             }

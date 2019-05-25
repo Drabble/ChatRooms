@@ -20,3 +20,4 @@ Todo
 - Sound emission color brighter
 - Search button
 - afk room 
+- reload room button
