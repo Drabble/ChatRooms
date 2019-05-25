@@ -3,7 +3,7 @@ $(function () {
     var myStream;
     var peer;
     var username;
-    var conns = [];
+    var clients = [];
     var current_room;
 
     /*********** Get mic stream *******************/
@@ -29,11 +29,13 @@ $(function () {
     /********** Button clicks ******************/
     // Send message
     $('#send').submit(function () {
-        for (var i in conns) {
-            conns[i].send($("#m").val());
-            $('#messages').append($('<li>').text($('#m').val()));
-            window.scrollTo(0, document.body.scrollHeight);
+        for (var i in clients) {
+            if(clients[i].conn != null){
+                clients[i].conn.send($("#m").val());
+            }
         }
+        window.scrollTo(0, document.body.scrollHeight);
+        $('#messages').append($('<li>').text($('#m').val()));
         $('#m').val('');
         return false;
     });
@@ -60,6 +62,7 @@ $(function () {
     socket.on('connect', () => {
         $("#loader-container").delay(1000).fadeOut(function () { $(this).remove() });
         $("#status-icon").css("color", "green");
+        socket.emit("hello");
     });
 
     // Disconnect from server
@@ -98,23 +101,42 @@ $(function () {
     });
 
     // Receive list of clients
-    socket.on("clients", function(clients){
-        $("#users table").empty();
-        if (clients.length == 0) {
-            $("#users table").append(`<tr><td colspan="2"><i>Not in room yet...</i></td></tr>`);
-        }
+    socket.on("client-join", function(client){
+        console.log(client);
+        $("#users table").append(`<tr><td><p>${client.username}</p></td><td style="text-align: right;"><i id="status-icon" class="fas fa-circle" style="color: red;"></tr>`);
+        clients.push(client);
+    });
+
+    
+    socket.on("client-leave", function(client){
         for (var i in clients) {
-            $("#users table").append(`<tr><td><p>${clients[i].username}</p></td><td style="text-align: right;"><i id="status-icon" class="fas fa-circle" style="color: red;"></tr>`);
+            if(client.id == clients[i].id){
+                break;
+            }
+        }
+        console.log(i);
+        console.log(clients.length);
+        clients.splice(i,1);
+        console.log(clients.length);
+        console.log("SPLICED CLIENS");
+        var child = $("#users table").children().first().children().eq(i);
+        console.log(child);
+        if(child != null){
+            console.log("remove");
+            child.remove();
         }
     });
 
     // Join room
     socket.on("room", function (msg) {
         // Close previous connections
-        for (var i in conns) {
-            conns[i].close();
+        for (var i in clients) {
+            if(clients[i].conn != null){
+                clients[i].conn.close();
+            }
         }
-        conns = [];
+        clients = [];
+        $("#users-table").empty();
         if (peer != null) {
             peer.destroy();
         }
@@ -122,9 +144,7 @@ $(function () {
         // Handle incoming p2p conns
         peer = new Peer(socket.id);
         peer.on('connection', function (conn) {
-            conn.on('open', function () {
-                conns.push(conn);
-            });
+            //conns.push(conn);
 
             conn.on('data', function (data) {
                 console.log(data);
@@ -162,19 +182,23 @@ $(function () {
                                 window.scrollTo(0, document.body.scrollHeight);
                             });
                         });
-                    })(i);//passing in variable to var here
-                    conns.push(conn);
+                    })(i);
                 }
             }
         });
 
         // Update users table
         $("#users table").empty();
+        clients = msg.clients;
         if (msg.clients.length == 0) {
             $("#users table").append(`<tr><td colspan="2"><i>Not in room yet...</i></td></tr>`);
         }
         for (var i in msg.clients) {
-            $("#users table").append(`<tr><td><p>${msg.clients[i].username}</p></td><td style="text-align: right;"><i id="status-icon" class="fas fa-circle" style="color: red;"></tr>`);
+            if(msg.clients[i].username === username){
+                $("#users table").append(`<tr><td><p class="active-room">${msg.clients[i].username}</p></td><td style="text-align: right;"><i id="status-icon" class="fas fa-circle" style="color: red;"></tr>`);
+            } else{
+                $("#users table").append(`<tr><td><p>${msg.clients[i].username}</p></td><td style="text-align: right;"><i id="status-icon" class="fas fa-circle" style="color: red;"></tr>`);
+            }
         }
     });
 

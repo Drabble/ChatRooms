@@ -11,3 +11,12 @@ You can also spin up a free Heroku dyno to test it out:
 [![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy?template=https://github.com/socketio/chat-example)
 
 Besides, the application is deployed on [Now](https://zeit.co/now): https://socketio-chat-example.now.sh/
+
+Todo
+
+- Status of users + ping
+- Welcome screen & goto home page button
+- Mute + unmute
+- Sound emission color brighter
+- Search button
+- afk room 

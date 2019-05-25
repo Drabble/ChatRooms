@@ -18,6 +18,7 @@ io.on('connection', function (socket) {
 
 	// Leave the default room
 	socket.leaveAll();
+	socket.join("afk");
 
 	// Set random username
 	socket.username = chance.prefix() + " " + chance.profession() + " " + chance.animal();
@@ -33,7 +34,8 @@ io.on('connection', function (socket) {
 
 	// Receive a new room request
 	socket.on('room', function (msg) {
-		socket.leave(socket.current_room);
+		socket.broadcast.to(socket.current_room).emit('client-leave', { 'id': socket.id, 'username': socket.username });
+		socket.leaveAll();
 		socket.current_room = msg;
 		console.log("joined room " + msg);
 		socket.join(msg);
@@ -43,27 +45,21 @@ io.on('connection', function (socket) {
 		for (var i in rooms) {
 			rooms_list.push({ 'name': rooms[i][0], 'count': rooms[i][1].length });
 		}
-		io.emit('rooms', rooms_list);
+		io.of('/').emit('rooms', rooms_list);
 
 		io.of('/').in(msg).clients((err, data) => {
 			var clients = [];
 			for (var i in data) {
-				clients.push({ 'id': io.of('/').connected[data[i]].id, 'username': io.of('/').connected[data[i]].username })
+				clients.push({ 'id': io.of('/').connected[data[i]].id, 'username': io.of('/').connected[data[i]].username });
 			}
 			socket.emit('room', { "name": msg, "clients": clients });
-			socket.broadcast.to(msg).emit('clients', clients);
+			socket.broadcast.to(msg).emit('client-join', { 'id': socket.id, 'username': socket.username });
 		});
 	});
 
 	// User disconnection
 	socket.on('disconnect', () => {
-		io.of('/').in(socket.current_room).clients((err, data) => {
-			var clients = [];
-			for (var i in data) {
-				clients.push({ 'id': io.of('/').connected[data[i]].id, 'username': io.of('/').connected[data[i]].username })
-			}
-			io.of("/").to(socket.current_room).emit('clients', clients);
-		});
+		socket.broadcast.to(socket.current_room).emit('client-leave', { 'id': socket.id, 'username': socket.username });
 		socket.leaveAll();
 		var rooms = Object.entries(io.of('/').adapter.rooms);
 		var rooms_list = [];
