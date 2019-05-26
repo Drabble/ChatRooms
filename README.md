@@ -19,5 +19,6 @@ Todo
 - Mute + unmute
 - Sound emission color brighter
 - Search button
-- afk room 
 - reload room button
+
+user buttons hide chat mute audio ping + indicate sound + reconnect

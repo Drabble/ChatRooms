@@ -129,9 +129,9 @@ body {
 #messages li {
     padding: 5px 10px;
 }
-#messages li:nth-child(odd) {
+/*#messages li:nth-child(odd) {
     background: #eee;
-}
+}*/
 #messages {
     margin-bottom: 40px
 }
@@ -277,6 +277,11 @@ table tr{
     display: table;
     width: 100%;
     margin: 5px 0px;
+}
+#leave-room{
+    display: none;
+    text-align: center;
+    color: #eb8282;
 }
 
 /* Scroll bar */

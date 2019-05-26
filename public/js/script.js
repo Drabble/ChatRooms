@@ -6,6 +6,15 @@ $(function () {
     var clients = [];
     var current_room;
 
+    var f = function() {
+        for (var i in clients) {
+            if(clients[i].conn != null){
+                clients[i].conn.send({action: 'ping', time: Date.now()});
+            }
+        }
+    };
+    window.setInterval(f, 10000);
+
     /*********** Get mic stream *******************/
     // handle browser prefixes
     navigator.getUserMedia = (navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia || navigator.mediaDevices.getUserMedia);
@@ -29,15 +38,17 @@ $(function () {
     /********** Button clicks ******************/
     // Send message
     $('#send').submit(function () {
-        for (var i in clients) {
-            if(clients[i].conn != null){
-                clients[i].conn.send($("#m").val());
+        if($("#m").val() !== ""){
+            for (var i in clients) {
+                if(clients[i].conn != null){
+                    clients[i].conn.send($("#m").val());
+                }
             }
+            window.scrollTo(0, document.body.scrollHeight);
+            
+            $('#messages').append(`<li><span class="message-username" style="color: red">${username} : </span>${$('#m').val()}</li>`);
+            $('#m').val('');
         }
-        window.scrollTo(0, document.body.scrollHeight);
-        
-        $('#messages').append(`<li><span class="message-username" style="color: red">${username} : </span>${$('#m').val()}</li>`);
-        $('#m').val('');
         return false;
     });
 
@@ -58,8 +69,39 @@ $(function () {
         return false;
     });
 
+    // Leave room
+    $("#leave-room").on('click', function () {
+        $("#messages").empty();
+        $("#users table").empty();
+        $("#users table").append('<tr><td colspan="2"><i>Not in room yet...</i></td></tr>');
+        socket.emit('leave-room');
+        current_room = null;
+        $("#leave-room").hide();
+        return false;
+    });
+
+    // Leave room
+    $(document).on('click', '.mute', function () {
+        $(this).parent().find(".unmute").css("display", "inline");
+        $(this).css("display", "none");
+        return false;
+    });
+
+    // Leave room
+    $(document).on('click', '.unmute', function () {
+        $(this).parent().find(".mute").css("display", "inline");
+        $(this).css("display", "none");
+        return false;
+    });
+
+    // Leave room
+    $(document).on('click', '.sync', function () {
+        
+        return false;
+    });
+
     /************ SocketIO callback *****************/
-    // Connect to servr
+    // Connect to server
     socket.on('connect', () => {
         $("#loader-container").delay(1000).fadeOut(function () { $(this).remove() });
         $("#status-icon").css("color", "green");
@@ -104,7 +146,7 @@ $(function () {
     // Receive list of clients
     socket.on("client-join", function(client){
         console.log(client);
-        $("#users table").append(`<tr><td><p>${client.username}</p></td><td style="text-align: right;"><i id="status-icon" class="fas fa-circle" style="color: red;"></tr>`);
+        $("#users table").append(`<tr><td><p>${client.username}</p></td><td style="text-align: right;"><a href="#" class="fas fa-volume-mute mute" style="display: none;"></a> <a href="#" class="fas fa-volume-up unmute" style="display: none;"></a> <a href="#" class="fas fa-sync sync"></a> <i id="status-icon" class="fas fa-circle status" style="color: red;"></i> <span class="ping"></span></tr>`);
         clients.push(client);
     });
 
@@ -136,21 +178,34 @@ $(function () {
             peer.destroy();
         }
 
+        $("#leave-room").css("display", "block");
+
         // Handle incoming p2p conns
         peer = new Peer(socket.id);
         peer.on('connection', function (conn) {
             for(var i in clients){
                 if(clients[i].id == conn.peer){
                     clients[i].conn = conn;
-                    $("#users table").children().first().children().eq(i).find("i").css("color", "green");
+                    $("#users table").children().first().children().eq(i).find(".status").css("color", "green");
+                    $("#users table").children().first().children().eq(i).find(".unmute").css("display", "inline");
                     break;
                 }
             }
 
             conn.on('data', function (data) {
-                console.log(data);
-                $('#messages').append(`<li><span class="message-username">${clients[i].username} : </span>${data}</li>`);
-                window.scrollTo(0, document.body.scrollHeight);
+                if(data.action === "ping") {
+                    data.action = "pong";
+                    conn.send(data);
+                    console.log("Ping received, pong sent.");
+                } else if(data.action === "pong") {
+                    var time = Date.now() - data.time;
+                    console.log("Ping roundtrip: " + time + "ms");
+                    $("#users table").children().first().children().eq(i).find(".ping").text(time + " ms");
+                } else{
+                    console.log(data);
+                    $('#messages').append(`<li><span class="message-username">${clients[i].username} : </span>${data}</li>`);
+                    window.scrollTo(0, document.body.scrollHeight);
+                }
             });
 
             peer.on('call', function (call) {
@@ -169,7 +224,8 @@ $(function () {
                     (function (i) {
                         // on open will be launch when you successfully connect to PeerServer
                         clients[i].conn.on('open', function () { 
-                            $("#users table").children().first().children().eq(i).find("i").css("color", "green");
+                            $("#users table").children().first().children().eq(i).find(".status").css("color", "green");
+                            $("#users table").children().first().children().eq(i).find(".unmute").css("display", "inline");
                             info("Connected to " + msg.clients[i].username);
 
                             var call = peer.call(msg.clients[i].id, myStream);
@@ -178,9 +234,19 @@ $(function () {
                                 playStream(remoteStream);
                             });
                             clients[i].conn.on('data', function (data) {
-                                console.log(data);
-                                $('#messages').append(`<li><span class="message-username">${clients[i].username} : </span>${data}</li>`);
-                                window.scrollTo(0, document.body.scrollHeight);
+                                if(data.action === "ping") {
+                                    data.action = "pong";
+                                    clients[i].conn.send(data);
+                                    console.log("Ping received, pong sent.");
+                                } else if(data.action === "pong") {
+                                    var time = Date.now() - data.time;
+                                    console.log("Ping roundtrip: " + time + "ms");
+                                    $("#users table").children().first().children().eq(i).find(".ping").text(time + " ms");
+                                } else{
+                                    console.log(data);
+                                    $('#messages').append(`<li><span class="message-username">${clients[i].username} : </span>${data}</li>`);
+                                    window.scrollTo(0, document.body.scrollHeight);
+                                }
                             });
                         });
                     })(i);
@@ -198,7 +264,7 @@ $(function () {
             if(msg.clients[i].username === username){
                 $("#users table").append(`<tr><td><p class="active-room">${msg.clients[i].username}</p></td><td style="text-align: right;"><i id="status-icon" class="fas fa-circle" style="color: green;"></tr>`);
             } else{
-                $("#users table").append(`<tr><td><p>${msg.clients[i].username}</p></td><td style="text-align: right;"><i id="status-icon" class="fas fa-circle" style="color: red;"></tr>`);
+                $("#users table").append(`<tr><td><p>${msg.clients[i].username}</p></td><td style="text-align: right;"><a href="#" class="fas fa-volume-mute mute" style="display: none;"></a> <a href="#" class="fas fa-volume-up unmute" style="display: none;"></a> <a href="#" class="fas fa-sync sync"></a> <i id="status-icon" class="fas fa-circle status" style="color: red;"></i> <span class="ping"></span></tr>`);
             }
         }
     });

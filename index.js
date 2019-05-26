@@ -37,7 +37,9 @@ io.on('connection', function (socket) {
 	var rooms = Object.entries(io.of('/').adapter.rooms);
 	var rooms_list = [];
 	for (var i in rooms) {
-		rooms_list.push({ 'name': rooms[i][0], 'count': rooms[i][1].length });
+		if(rooms[i][0] !== "afk"){
+			rooms_list.push({ 'name': rooms[i][0], 'count': rooms[i][1].length });
+		}
 	}
 	socket.emit('rooms', rooms_list);
 
@@ -52,7 +54,9 @@ io.on('connection', function (socket) {
 		var rooms = Object.entries(io.of('/').adapter.rooms);
 		var rooms_list = [];
 		for (var i in rooms) {
-			rooms_list.push({ 'name': rooms[i][0], 'count': rooms[i][1].length });
+			if(rooms[i][0] !== "afk"){
+				rooms_list.push({ 'name': rooms[i][0], 'count': rooms[i][1].length });
+			}
 		}
 		io.of('/').emit('rooms', rooms_list);
 
@@ -66,6 +70,24 @@ io.on('connection', function (socket) {
 		});
 	});
 
+	// Leave room
+	socket.on('leave-room', function () {
+		socket.broadcast.to(socket.current_room).emit('client-leave', { 'id': socket.id, 'username': socket.username });
+		socket.leaveAll();
+		socket.current_room = null;
+		console.log("left room ");
+		socket.join("afk");
+		
+		var rooms = Object.entries(io.of('/').adapter.rooms);
+		var rooms_list = [];
+		for (var i in rooms) {
+			if(rooms[i][0] !== "afk"){
+				rooms_list.push({ 'name': rooms[i][0], 'count': rooms[i][1].length });
+			}
+		}
+		io.of('/').emit('rooms', rooms_list);
+	});
+
 	// User disconnection
 	socket.on('disconnect', () => {
 		socket.broadcast.to(socket.current_room).emit('client-leave', { 'id': socket.id, 'username': socket.username });
@@ -73,7 +95,9 @@ io.on('connection', function (socket) {
 		var rooms = Object.entries(io.of('/').adapter.rooms);
 		var rooms_list = [];
 		for (var i in rooms) {
-			rooms_list.push({ 'name': rooms[i][0], 'count': rooms[i][1].length });
+			if(rooms[i][0] !== "afk"){
+				rooms_list.push({ 'name': rooms[i][0], 'count': rooms[i][1].length });
+			}
 		}
 		io.emit('rooms', rooms_list);
 	});
