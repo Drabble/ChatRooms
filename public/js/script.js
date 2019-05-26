@@ -6,14 +6,14 @@ $(function () {
     var clients = [];
     var current_room;
 
-    var f = function() {
+    var updatePing = function() {
         for (var i in clients) {
             if(clients[i].conn != null){
                 clients[i].conn.send({action: 'ping', time: Date.now()});
             }
         }
     };
-    window.setInterval(f, 10000);
+    window.setInterval(updatePing, 10000);
 
     /*********** Get mic stream *******************/
     // handle browser prefixes
@@ -192,6 +192,8 @@ $(function () {
                 }
             }
 
+            updatePing();
+
             conn.on('data', function (data) {
                 if(data.action === "ping") {
                     data.action = "pong";
@@ -200,7 +202,7 @@ $(function () {
                 } else if(data.action === "pong") {
                     var time = Date.now() - data.time;
                     console.log("Ping roundtrip: " + time + "ms");
-                    $("#users table").children().first().children().eq(i).find(".ping").text(time + " ms");
+                    $("#users table").children().first().children().eq(i).find(".ping").text(time + "ms");
                 } else{
                     console.log(data);
                     $('#messages').append(`<li><span class="message-username">${clients[i].username} : </span>${data}</li>`);
@@ -241,7 +243,7 @@ $(function () {
                                 } else if(data.action === "pong") {
                                     var time = Date.now() - data.time;
                                     console.log("Ping roundtrip: " + time + "ms");
-                                    $("#users table").children().first().children().eq(i).find(".ping").text(time + " ms");
+                                    $("#users table").children().first().children().eq(i).find(".ping").text(time + "ms");
                                 } else{
                                     console.log(data);
                                     $('#messages').append(`<li><span class="message-username">${clients[i].username} : </span>${data}</li>`);
